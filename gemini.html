@@ -1,12 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RPG Mesa Caótico - Cafezinho Edition</title>
-<!-- Importando fontes estilosas para cara de jogo de terminal/retro -->
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -82,11 +79,6 @@
     transition: all 0.3s;
   }
 
-  .hud-card:hover {
-    border-color: #444;
-    background: rgba(255, 255, 255, 0.05);
-  }
-
   .hud-card span {
     display: block;
     font-size: 10px;
@@ -96,13 +88,13 @@
   }
 
   .hud-card b {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   #hp { color: var(--red); }
   #force { color: var(--yellow); }
   #def { color: var(--blue); }
-  #standHud { color: var(--magenta); font-size: 11px; block-size: auto; }
+  #standHud { color: var(--magenta); font-size: 11px; }
 
   /* Log de Eventos estilo Terminal */
   #log {
@@ -218,12 +210,6 @@
     border: none;
   }
 
-  #nameForm button:hover {
-    background: #22d3ee;
-    color: #000;
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
-  }
-
   #restartWrap {
     text-align: center;
     margin-top: 16px;
@@ -238,26 +224,6 @@
     margin: 0 auto;
     display: none;
     justify-content: center;
-  }
-  
-  #restartWrap button:hover {
-    background: #ff6b6b;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-  }
-
-  /* Scrollbar Customizada */
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.1);
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #444;
   }
 </style>
 </head>
@@ -287,16 +253,13 @@
   <div id="log"></div>
   <div id="diceFlash"></div>
 
-  <!-- Form Inicial -->
   <div id="nameForm">
-    <input id="nameInput" placeholder="Como o mestre deve te chamar,..... de fracassado?..." maxlength="24" autofocus>
+    <input id="nameInput" placeholder="Como o mestre deve te chamar de fracassado?..." maxlength="24" autofocus>
     <button onclick="iniciarJogo()">🚪 Entrar no Calabouço</button>
   </div>
 
-  <!-- Menu de Ações -->
   <div id="menu" style="display:none;"></div>
 
-  <!-- Botão de Ressuscitar -->
   <div id="restartWrap">
     <button id="restartBtn" onclick="location.reload()">💀 Aceitar a Derrota & Recomeçar</button>
   </div>
@@ -310,20 +273,27 @@ const Bosses = [
   "Monge da Receita Federal", "Fiscal de Trânsito do Inferno", "Pose do Rodo"
 ];
 
-const poderesJojo = [
-  "Stand: Veridis Quo", "Stand: Around the World", "Stand: Iron Pope",
-  "Stand: Rap Snitch Kniches", "Stand: Echoes of Doom", "Stand: No Surprises",
-  "Stand: Forever Diamonds", "Stand: New Slave"
-];
+// Mapeamento dos Stands com suas respectivas habilidades especiais únicas de Nível 3
+const standsDefinicoes = {
+  "Stand: Veridis Quo": { especial: "Sinfonia Espacial do Ócio", descEspecial: "Causa dano místico massivo baseado na sua defesa" },
+  "Stand: Around the World": { especial: "Loop Temporal de 12 segundos", descEspecial: "Causa dano médio e recupera 30 HP" },
+  "Stand: Iron Pope": { especial: "Julgamento de Ferro", descEspecial: "Causa dano alto e aumenta sua defesa em +5 permanentemente nesta batalha" },
+  "Stand: Rap Snitch Kniches": { especial: "Dedada do Destino", descEspecial: "Ignora completamente a armadura do Boss e causa dano crítico" },
+  "Stand: Echoes of Doom": { especial: "Grito do Desemprego Existencial", descEspecial: "Deixa o Boss surdo, causando dano massivo" },
+  "Stand: No Surprises": { especial: "Climax Melancólico de Alarme", descEspecial: "Causa dano destrutivo, mas te custa 10 de HP" },
+  "Stand: Forever Diamonds": { especial: "Brilho Ofuscante da Riqueza", descEspecial: "Causa dano alto e cega o Boss (ele errará o próximo turno)" },
+  "Stand: New Slave": { especial: "Quebra das Correntes da CLT", descEspecial: "Causa o dobro da sua força como dano" }
+};
 
-// Mapeado os itens com efeito real ao usar!
+const poderesJojo = Object.keys(standsDefinicoes);
+
 const itensEfeitos = {
   "Panela Australium": { descricao: "Recupera 40 HP e dá +2 Defesa", usar: () => { jogador.hp = Math.min(jogador.hp + 40, jogador.hpMax); jogador.defesa += 2; } },
-  "Chapéu Estranhamente Assustador": { descricao: "Dá +8 de Força e -5 de HP (Estilo)", usar: () => { jogador.forca += 8; jogador.hp -= 5; } },
-  "Máscara do Caos": { descricao: "Troca sua defesa por força aleatoriamente", usar: () => { const temp = jogador.defesa; jogador.defesa = 2; jogador.forca += temp + 5; } },
+  "Chapéu Estranhamente Assustador": { descricao: "Dá +8 de Força e -5 de HP", usar: () => { jogador.forca += 8; jogador.hp -= 5; } },
+  "Máscara do Caos": { descricao: "Troca sua defesa por força", usar: () => { const temp = jogador.defesa; jogador.defesa = 2; jogador.forca += temp + 5; } },
   "Bota do Scout Radioativo": { descricao: "Recupera 20 de HP", usar: () => { jogador.hp = Math.min(jogador.hp + 20, jogador.hpMax); } },
   "Óculos do Sofrimento": { descricao: "Dá +5 de Defesa permanente", usar: () => { jogador.defesa += 5; } },
-  "Katana de Papelão": { descricao: "Aumenta muito a força (+12), mas te corta (-10 HP)", usar: () => { jogador.forca += 12; jogador.hp -= 10; } },
+  "Katana de Papelão": { descricao: "Força +12, mas perde -10 HP", usar: () => { jogador.forca += 12; jogador.hp -= 10; } },
   "Cabeça de Rato": { descricao: "Te deixa imundo. +15 HP", usar: () => { jogador.hp = Math.min(jogador.hp + 15, jogador.hpMax); } }
 };
 
@@ -366,12 +336,15 @@ let jogador = {
   hpMax: 150, 
   forca: 0, 
   defesa: 0, 
-  stand: "", 
+  stand: "",
+  standLvl: 1,
+  standXp: 0,
   inventario: []
 };
 
 let emBossFight = false;
 let bossState = null;
+let bossCego = false; // Estado especial para o Stand Forever Diamonds
 
 const logEl = document.getElementById('log');
 const menuEl = document.getElementById('menu');
@@ -391,17 +364,20 @@ function logBlank() {
 }
 
 function atualizarHUD() {
-  // Garante que o HP não fique negativo na tela
   document.getElementById('hp').textContent = Math.max(0, jogador.hp);
   document.getElementById('force').textContent = jogador.forca;
   document.getElementById('def').textContent = jogador.defesa;
-  document.getElementById('standHud').textContent = jogador.stand || "Nenhum";
+  
+  let standStatus = "Nenhum";
+  if (jogador.stand) {
+    standStatus = `${jogador.stand.replace("Stand: ", "")} (Lvl ${jogador.standLvl})`;
+  }
+  document.getElementById('standHud').textContent = standStatus;
 }
 
-// Roda dado com pequeno suspense na tela
 async function rolarD20() {
   diceEl.textContent = "🎲 Rolando dados da desgraça...";
-  await new Promise(r => setTimeout(r, 450));
+  await new Promise(r => setTimeout(r, 400));
   const valor = rng.next(1, 21);
   diceEl.textContent = `🎲 Você rolou um [ D20 = ${valor} ]!`;
   log(`[D20]: Rolou ${valor}`, valor >= 12 ? 'green' : 'red');
@@ -464,17 +440,59 @@ function renderMenuBoss() {
     <button onclick="bossAcao('atacar')">⚔ 1 - Descer o Sarrafo</button>
     <button onclick="bossAcao('defender')">🛡 2 - Se Encolher</button>
     <button onclick="bossAcao('fugir')">🏃 3 - Fugir Todo Torto</button>
-    <button onclick="bossAcao('stand')" ${!jogador.stand ? 'disabled' : ''}>✨ 4 - Usar Stand</button>
-    <button onclick="bossAcao('item')">🎒 5 - Usar Item de Cura</button>
+    <button onclick="abrirMenuStand()" ${!jogador.stand ? 'disabled' : ''}>✨ 4 - Menu do Stand</button>
+    <button onclick="bossAcao('item')">🎒 5 - Usar Item</button>
     <button onclick="bossAcao('conversar')">💬 6 - Tentar Dialogar</button>
   `;
+}
+
+function abrirMenuStand() {
+  if (!jogador.stand) return;
+
+  const standInfo = standsDefinicoes[jogador.stand];
+  menuEl.innerHTML = "";
+
+  // Botão 1: Soco (Sempre liberado)
+  const btnSoco = document.createElement('button');
+  btnSoco.textContent = "👊 1 - Soco Sequencial (Lvl 1)";
+  btnSoco.onclick = () => usarHabilidadeStand('soco');
+  menuEl.appendChild(btnSoco);
+
+  // Botão 2: Chute (Liberado Lvl 2+)
+  const btnChute = document.createElement('button');
+  if (jogador.standLvl >= 2) {
+    btnChute.textContent = "🦶 2 - Chute de Impacto (Lvl 2)";
+    btnChute.onclick = () => usarHabilidadeStand('chute');
+  } else {
+    btnChute.textContent = "🔒 Chute de Impacto (Requer Lvl 2)";
+    btnChute.disabled = true;
+  }
+  menuEl.appendChild(btnChute);
+
+  // Botão 3: Especial (Liberado Lvl 3)
+  const btnEspecial = document.createElement('button');
+  if (jogador.standLvl >= 3) {
+    btnEspecial.textContent = `🔮 3 - ${standInfo.especial} (Lvl 3)`;
+    btnEspecial.onclick = () => usarHabilidadeStand('especial');
+  } else {
+    btnEspecial.textContent = `🔒 Habilidade Especial (Requer Lvl 3)`;
+    btnEspecial.disabled = true;
+  }
+  menuEl.appendChild(btnEspecial);
+
+  // Botão Voltar
+  const btnVoltar = document.createElement('button');
+  btnVoltar.textContent = "⬅ Voltar";
+  btnVoltar.style.borderColor = "var(--red)";
+  btnVoltar.onclick = renderMenuBoss;
+  menuEl.appendChild(btnVoltar);
 }
 
 // ===================== SISTEMA DE SALVAR =====================
 function salvarJogo() {
   window.__saveSlot = JSON.stringify(jogador);
   logBlank();
-  log("💾 [Sistema]: Jogo salvo com sucesso nos servidores movidos a batata.", 'green');
+  log("💾 [Sistema]: Jogo salvo nos servidores movidos a batata.", 'green');
 }
 
 function carregarJogo() {
@@ -519,15 +537,35 @@ function encontrarItem() {
   log(`✨ Você achou caído no chão: ${item}!`, 'green');
   jogador.inventario.push(item);
 
-  // Chance de achar flecha de Jojo
-  if (rng.next(1, 3) === 1) {
-    const bonus = rng.next(3, 8);
-    log("💘 Uma flecha misteriosa com ponta de ouro te espetou!");
-    jogador.stand = poderesJojo[rng.next(0, poderesJojo.length)];
-    log(`Seu Stand despertou: ${jogador.stand}`, 'magenta');
-    jogador.forca += bonus;
-    log(`Sua força aumentou em +${bonus}!`);
+  // Flecha do Stand
+  if (rng.next(1, 4) === 1) {
+    const novoStand = poderesJojo[rng.next(0, poderesJojo.length)];
+    logBlank();
+    log("💘 Uma flecha misteriosa com ponta de ouro te espetou!", 'magenta');
+    
+    if (jogador.stand === novoStand) {
+      log("A flecha ressoou com seu Stand atual! Ele ganhou +1 Nível!", 'green');
+      evoluirStand(1);
+    } else {
+      jogador.stand = novoStand;
+      jogador.standLvl = 1;
+      jogador.standXp = 0;
+      log(`Seu Stand despertou: ${jogador.stand}`, 'magenta');
+      log("Comece a derrotar chefes para evoluir as habilidades dele!", 'cyan');
+    }
   }
+}
+
+function evoluirStand(niveis = 1) {
+  jogador.standLvl += niveis;
+  log(`🌟 SEU STAND EVOLUIU PARA O NÍVEL ${jogador.standLvl}!`, 'green');
+  if (jogador.standLvl === 2) {
+    log("🔓 HABILIDADE DESBLOQUEADA: Chute de Impacto!", 'cyan');
+  } else if (jogador.standLvl >= 3) {
+    const especialNome = standsDefinicoes[jogador.stand].especial;
+    log(`🔓 HABILIDADE SUPREMA DESBLOQUEADA: [ ${especialNome} ]!`, 'cyan');
+  }
+  atualizarHUD();
 }
 
 // ===================== COMBATES DE BOSS =====================
@@ -539,10 +577,87 @@ function iniciarBossFight() {
     atk: rng.next(12, 22)
   };
   emBossFight = true;
+  bossCego = false;
 
   logBlank();
   log(`🚨 UM INIMIGO SELVAGEM APARECEU: ${boss.toUpperCase()}!`, 'red');
   renderMenuBoss();
+}
+
+async function usarHabilidadeStand(tipo) {
+  if (!emBossFight || !bossState) return;
+
+  logBlank();
+  log(`Você comanda seu [ ${jogador.stand} ]!`, 'magenta');
+  const dado = await rolarD20();
+
+  if (dado < 7) {
+    log("Seu Stand ficou confuso e errou o golpe!", 'red');
+    prosseguirTurnoLuta();
+    return;
+  }
+
+  let dano = 0;
+
+  if (tipo === 'soco') {
+    // Soco Sequencial (Baseado em Força)
+    dano = jogador.forca + rng.next(8, 16);
+    log(`👊 ORA ORA ORA! Uma rajada de socos causou ${dano} de dano!`, 'green');
+    bossState.hp -= dano;
+  } 
+  else if (tipo === 'chute' && jogador.standLvl >= 2) {
+    // Chute de Impacto (Causa mais dano e quebra defesa)
+    dano = jogador.forca + rng.next(15, 25);
+    log(`🦶 CHUTE DE IMPACTO! Seu Stand quebrou a base do inimigo causando ${dano} de dano!`, 'green');
+    bossState.hp -= dano;
+  } 
+  else if (tipo === 'especial' && jogador.standLvl >= 3) {
+    // Habilidade Suprema Única por Stand
+    const info = standsDefinicoes[jogador.stand];
+    log(`🔮 ESPECIAL SUPREMO: [ ${info.especial} ]!`, 'magenta');
+    log(`Descrição: ${info.descEspecial}`, 'dim');
+
+    // Executa o efeito com base no Stand
+    switch(jogador.stand) {
+      case "Stand: Veridis Quo":
+        dano = 30 + (jogador.defesa * 2);
+        break;
+      case "Stand: Around the World":
+        dano = 35;
+        jogador.hp = Math.min(jogador.hp + 30, jogador.hpMax);
+        log("⏱ O tempo voltou um pouco e você curou 30 HP!", 'green');
+        break;
+      case "Stand: Iron Pope":
+        dano = 45;
+        jogador.defesa += 5;
+        log("🛡 Sua blindagem espiritual aumentou permanentemente nesta luta! (+5 Defesa)", 'blue');
+        break;
+      case "Stand: Rap Snitch Kniches":
+        dano = 65; // Puro dano alto ignorando armadura
+        break;
+      case "Stand: Echoes of Doom":
+        dano = 55;
+        break;
+      case "Stand: No Surprises":
+        dano = 70;
+        jogador.hp -= 10;
+        log("💥 O impacto te machucou de volta! Você perdeu 10 HP.", 'red');
+        break;
+      case "Stand: Forever Diamonds":
+        dano = 30;
+        bossCego = true;
+        log(`✨ O ${bossState.nome} foi completamente cegado pelo brilho e vai errar o próximo ataque!`, 'yellow');
+        break;
+      case "Stand: New Slave":
+        dano = jogador.forca * 2;
+        break;
+    }
+
+    log(`💥 Dano Místico causado: ${dano}!`, 'green');
+    bossState.hp -= dano;
+  }
+
+  prosseguirTurnoLuta();
 }
 
 async function bossAcao(acao) {
@@ -578,37 +693,36 @@ async function bossAcao(acao) {
       }
       break;
     }
-    case 'stand': {
-      if (!jogador.stand) {
-        log("Você tentou invocar o nada.");
-        break;
-      }
-      log(`🔮 MÁXIMO PODER: Você invoca seu [ ${jogador.stand} ]!`, 'magenta');
-      const danoStand = rng.next(35, 55);
-      bossState.hp -= danoStand;
-      log(`O Stand desferiu uma sequência de socos causando ${danoStand} de dano!`, 'green');
-      break;
-    }
     case 'item':
       mostrarInventario();
-      return; // Abre a bolsa e pula o turno do boss para você escolher o item.
+      return; 
     case 'conversar':
       await conversarComNPC();
       break;
   }
 
-  // Turno do Inimigo
-  if (acao !== 'conversar' && bossState && bossState.hp > 0) {
+  prosseguirTurnoLuta();
+}
+
+// Controla os turnos, contra-ataques e finalização de combate
+function prosseguirTurnoLuta() {
+  if (bossState && bossState.hp > 0) {
     logBlank();
     log(`Turno do inimigo: ${bossState.nome} está se preparando...`, 'dim');
-    const bossRoll = rng.next(1, 21);
-    if (bossRoll >= 10) {
-      let danoBoss = bossState.atk - jogador.defesa;
-      if (danoBoss < 2) danoBoss = 2;
-      jogador.hp -= danoBoss;
-      log(`🥊 ${bossState.nome} te acertou em cheio causando ${danoBoss} de dano!`, 'red');
+    
+    if (bossCego) {
+      log(`🍃 O ${bossState.nome} atacou o nada porque ainda está cego de luz!`, 'yellow');
+      bossCego = false; // consome a cegueira
     } else {
-      log(`🍃 O ${bossState.nome} errou o ataque de forma vergonhosa.`);
+      const bossRoll = rng.next(1, 21);
+      if (bossRoll >= 10) {
+        let danoBoss = bossState.atk - jogador.defesa;
+        if (danoBoss < 2) danoBoss = 2;
+        jogador.hp -= danoBoss;
+        log(`🥊 ${bossState.nome} te acertou em cheio causando ${danoBoss} de dano!`, 'red');
+      } else {
+        log(`🍃 O ${bossState.nome} errou o ataque de forma vergonhosa.`);
+      }
     }
   }
 
@@ -616,13 +730,26 @@ async function bossAcao(acao) {
 
   if (checarMorte()) return;
 
-  // Vitória contra o boss
+  // Vitória
   if (bossState && bossState.hp <= 0) {
     logBlank();
     log(`🎉 PARABÉNS! Você derrotou o temível ${bossState.nome}!`, 'green');
+    
+    // Concede XP ao Stand se o jogador tiver um
+    if (jogador.stand) {
+      jogador.standXp += 1;
+      log(`✨ Seu Stand ganhou 1 XP de Batalha! (XP Atual: ${jogador.standXp})`, 'magenta');
+      if (jogador.standXp === 1 && jogador.standLvl < 2) {
+        evoluirStand(1);
+      } else if (jogador.standXp === 3 && jogador.standLvl < 3) {
+        evoluirStand(1);
+      }
+    }
+
     const recompensa = rng.next(20, 50);
     jogador.hp = Math.min(jogador.hp + recompensa, jogador.hpMax);
     log(`Você pilhou os bolsos dele e recuperou +${recompensa} HP.`);
+    
     emBossFight = false;
     bossState = null;
     atualizarHUD();
@@ -656,14 +783,12 @@ function mostrarInventario() {
     const info = itensEfeitos[it] || { descricao: "Nenhum efeito conhecido" };
     log(`[${idx + 1}] ${it} - (${info.descricao})`, 'yellow');
     
-    // Cria botões dinâmicos para uso real dos itens
     const btn = document.createElement('button');
     btn.textContent = `Usar: ${it}`;
     btn.onclick = () => usarItemDaMochila(idx);
     menuEl.appendChild(btn);
   });
 
-  // Botão de voltar
   const voltarBtn = document.createElement('button');
   voltarBtn.textContent = "⬅ Voltar";
   voltarBtn.style.borderColor = "var(--red)";
@@ -679,9 +804,7 @@ function usarItemDaMochila(index) {
   if (itensEfeitos[item]) {
     itensEfeitos[item].usar();
     log(`Você usou/ativou: ${item}!`, 'green');
-    jogador.inventario.splice(index, 1); // remove o item
-  } else {
-    log("Esse item está quebrado e não faz nada.");
+    jogador.inventario.splice(index, 1);
   }
   
   atualizarHUD();
@@ -698,7 +821,7 @@ function usarItemDaMochila(index) {
 
 // ===================== OUTRAS OPÇÕES DO MENU =====================
 async function ocarina() {
-  log("🎶 Você sopra a ocarina desafinada tentando imitar o Link...", 'cyan');
+  log("🎶 Você sopra a ocarina desafinada...", 'cyan');
   const efeito = rng.next(1, 7);
   await new Promise(r => setTimeout(r, 400));
   
@@ -708,7 +831,7 @@ async function ocarina() {
       jogador.forca += 3;
       break;
     case 2:
-      log("🌧 Uma nuvem cinza se formou só em cima de você e choveu ácido. HP -12.", 'red');
+      log("🌧 Choveu ácido. HP -12.", 'red');
       jogador.hp -= 12;
       break;
     case 3:
@@ -716,7 +839,7 @@ async function ocarina() {
       jogador.defesa += 4;
       break;
     case 4:
-      log("💥 O mestre mudou o sistema de regras na maldade. Seus atributos caíram!", 'red');
+      log("💥 O mestre mudou o sistema de regras na maldade. Atributos reduzidos!", 'red');
       jogador.forca = Math.max(1, jogador.forca - 5);
       jogador.defesa = Math.max(0, jogador.defesa - 3);
       break;
@@ -747,12 +870,12 @@ async function descansar() {
 }
 
 async function cozinhar() {
-  log("🍳 Você tenta fazer um miojo improvisado com ingredientes duvidosos...", 'dim');
+  log("🍳 Você tenta fazer um miojo improvisado...", 'dim');
   const dado = await rolarD20();
   if (dado >= 11) {
     const bonus = rng.next(6, 18);
     jogador.forca += bonus;
-    log(`🍜 Ficou com gosto de sabão, mas te deu energia de sobra! Força +${bonus}!`, 'green');
+    log(`🍜 Ficou com gosto de sabão, mas te deu energia! Força +${bonus}!`, 'green');
   } else {
     const dano = rng.next(10, 22);
     jogador.hp -= dano;
@@ -804,7 +927,7 @@ async function conversarComNPC() {
     }
   } else {
     const dano = rng.next(8, 20);
-    log(`❌ Que desastre de conversa! O clima ficou péssimo. Você perdeu ${dano} de moral (HP).`, 'red');
+    log(`❌ Que desastre de conversa! O clima ficou péssimo. Você perdeu ${dano} de moral.`, 'red');
     jogador.hp -= dano;
   }
 }
