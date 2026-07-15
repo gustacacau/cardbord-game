@@ -1,0 +1,813 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPG Mesa Caótico - Cafezinho Edition</title>
+<!-- Importando fontes estilosas para cara de jogo de terminal/retro -->
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --panel: #121216;
+    --border: #2d2d38;
+    --border-focus: #3b82f6;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --red: #ef4444;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --cyan: #06b6d4;
+    --magenta: #d946ef;
+    --blue: #3b82f6;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 780px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  h1 {
+    font-family: 'Press Start 2P', cursive;
+    text-align: center;
+    color: var(--cyan);
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+  }
+
+  /* HUD Estilizado */
+  #hud {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .hud-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 12px;
+    transition: all 0.3s;
+  }
+
+  .hud-card:hover {
+    border-color: #444;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .hud-card span {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .hud-card b {
+    font-size: 14px;
+  }
+
+  #hp { color: var(--red); }
+  #force { color: var(--yellow); }
+  #def { color: var(--blue); }
+  #standHud { color: var(--magenta); font-size: 11px; block-size: auto; }
+
+  /* Log de Eventos estilo Terminal */
+  #log {
+    background: #050507;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    height: 340px;
+    overflow-y: auto;
+    font-size: 13.5px;
+    line-height: 1.6;
+    scroll-behavior: smooth;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+  }
+
+  #log div {
+    margin-bottom: 6px;
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+  }
+
+  #log .red { color: var(--red); border-left-color: var(--red); }
+  #log .green { color: var(--green); border-left-color: var(--green); }
+  #log .yellow { color: var(--yellow); border-left-color: var(--yellow); }
+  #log .cyan { color: var(--cyan); border-left-color: var(--cyan); }
+  #log .magenta { color: var(--magenta); border-left-color: var(--magenta); }
+  #log .blue { color: var(--blue); border-left-color: var(--blue); }
+  #log .dim { color: var(--text-dim); }
+
+  /* Dice Box */
+  #diceFlash {
+    text-align: center;
+    color: var(--yellow);
+    font-size: 13px;
+    font-weight: bold;
+    margin: 12px 0;
+    min-height: 20px;
+    letter-spacing: 1px;
+  }
+
+  /* Menus e Botões */
+  #menu {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  button {
+    background: #181820;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12.5px;
+    text-align: left;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button:hover:not(:disabled) {
+    background: #22222e;
+    border-color: var(--cyan);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  button:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
+
+  /* Form de Nome Inicial */
+  #nameForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  #nameForm input {
+    background: #08080a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #nameForm input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+  }
+
+  #nameForm button {
+    background: var(--cyan);
+    color: #000;
+    justify-content: center;
+    font-size: 14px;
+    border: none;
+  }
+
+  #nameForm button:hover {
+    background: #22d3ee;
+    color: #000;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+  }
+
+  #restartWrap {
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  #restartWrap button {
+    background: var(--red);
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    padding: 12px 28px;
+    margin: 0 auto;
+    display: none;
+    justify-content: center;
+  }
+  
+  #restartWrap button:hover {
+    background: #ff6b6b;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  }
+
+  /* Scrollbar Customizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #444;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>⚔ RPG 2,50 - CAFEZINHO ⚔</h1>
+  
+  <div id="hud">
+    <div class="hud-card">
+      <span>❤ Vida</span>
+      <b id="hp">-</b>
+    </div>
+    <div class="hud-card">
+      <span>💪 Força</span>
+      <b id="force">-</b>
+    </div>
+    <div class="hud-card">
+      <span>🛡 Defesa</span>
+      <b id="def">-</b>
+    </div>
+    <div class="hud-card">
+      <span>✨ Stand</span>
+      <b id="standHud">-</b>
+    </div>
+  </div>
+
+  <div id="log"></div>
+  <div id="diceFlash"></div>
+
+  <!-- Form Inicial -->
+  <div id="nameForm">
+    <input id="nameInput" placeholder="Como o mestre deve te chamar,..... de fracassado?..." maxlength="24" autofocus>
+    <button onclick="iniciarJogo()">🚪 Entrar no Calabouço</button>
+  </div>
+
+  <!-- Menu de Ações -->
+  <div id="menu" style="display:none;"></div>
+
+  <!-- Botão de Ressuscitar -->
+  <div id="restartWrap">
+    <button id="restartBtn" onclick="location.reload()">💀 Aceitar a Derrota & Recomeçar</button>
+  </div>
+</div>
+
+<script>
+// ===================== DADOS DO CAOS =====================
+const Bosses = [
+  "Agiota Necromante", "Palhaço do INSS", "Idosa Armada", "CEO da Ubisoft",
+  "Satanás do LinkedIn", "Mago Davi Jones", "CLT de 6 Dias", "Anjo do Bolsa Família",
+  "Monge da Receita Federal", "Fiscal de Trânsito do Inferno", "Pose do Rodo"
+];
+
+const poderesJojo = [
+  "Stand: Veridis Quo", "Stand: Around the World", "Stand: Iron Pope",
+  "Stand: Rap Snitch Kniches", "Stand: Echoes of Doom", "Stand: No Surprises",
+  "Stand: Forever Diamonds", "Stand: New Slave"
+];
+
+// Mapeado os itens com efeito real ao usar!
+const itensEfeitos = {
+  "Panela Australium": { descricao: "Recupera 40 HP e dá +2 Defesa", usar: () => { jogador.hp = Math.min(jogador.hp + 40, jogador.hpMax); jogador.defesa += 2; } },
+  "Chapéu Estranhamente Assustador": { descricao: "Dá +8 de Força e -5 de HP (Estilo)", usar: () => { jogador.forca += 8; jogador.hp -= 5; } },
+  "Máscara do Caos": { descricao: "Troca sua defesa por força aleatoriamente", usar: () => { const temp = jogador.defesa; jogador.defesa = 2; jogador.forca += temp + 5; } },
+  "Bota do Scout Radioativo": { descricao: "Recupera 20 de HP", usar: () => { jogador.hp = Math.min(jogador.hp + 20, jogador.hpMax); } },
+  "Óculos do Sofrimento": { descricao: "Dá +5 de Defesa permanente", usar: () => { jogador.defesa += 5; } },
+  "Katana de Papelão": { descricao: "Aumenta muito a força (+12), mas te corta (-10 HP)", usar: () => { jogador.forca += 12; jogador.hp -= 10; } },
+  "Cabeça de Rato": { descricao: "Te deixa imundo. +15 HP", usar: () => { jogador.hp = Math.min(jogador.hp + 15, jogador.hpMax); } }
+};
+
+const itensTF2 = Object.keys(itensEfeitos);
+
+const eventosAleatorios = [
+  "Um mendigo sábio te desafia num duelo filosófico.",
+  "Você pisa num LEGO ancestral perdido no chão escuro.",
+  "O mestre esqueceu as regras e inventou um imposto novo.",
+  "Uma porta de madeira suspeita aparece do nada no meio do nada.",
+  "Um vendedor calvo tenta te empurrar uma NFT de macaco medieval.",
+  "Seu personagem senta e chora por conta de uma crise existencial.",
+  "Uma ocarina desafinada começa a tocar sozinha ao longe.",
+  "Um goblin com boné de firma começa a cantar Linkin Park.",
+  "O clima muda para chuva ácida de refrigerante barato.",
+  "Você encontra um save point... mas ele cobra assinatura mensal."
+];
+
+const finaisAbsurdos = [
+  "Você tropeça no próprio ego e desmaia de vergonha.",
+  "O chão cede e você cai num vazio administrativo do governo.",
+  "O mestre cansou de narrar e você simplesmente deixa de existir.",
+  "A porta misteriosa se abre e te joga direto dentro de uma reunião da firma.",
+  "O vendedor calvo te convence a gastar toda a sua alma em cripto furada.",
+  "A dor existencial foi demais. Você virou concursado público.",
+  "A ocarina toca 'Evidências' ao contrário e sua mente derrete.",
+  "O goblin te obriga a assinar uma CLT de 44 horas semanais.",
+  "Um raio cai na sua cabeça (azar absoluto).",
+  "Começa a chover boletos de cobrança física e você infarta."
+];
+
+// ===================== ESTADO DO JOGO =====================
+const rng = {
+  next(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
+};
+
+let jogador = {
+  nome: "", 
+  hp: 100, 
+  hpMax: 150, 
+  forca: 0, 
+  defesa: 0, 
+  stand: "", 
+  inventario: []
+};
+
+let emBossFight = false;
+let bossState = null;
+
+const logEl = document.getElementById('log');
+const menuEl = document.getElementById('menu');
+const diceEl = document.getElementById('diceFlash');
+
+// ===================== FUNÇÕES AUXILIARES DE UI =====================
+function log(msg, cls) {
+  const span = document.createElement('div');
+  if (cls) span.className = cls;
+  span.textContent = msg;
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function logBlank() {
+  log("", "dim");
+}
+
+function atualizarHUD() {
+  // Garante que o HP não fique negativo na tela
+  document.getElementById('hp').textContent = Math.max(0, jogador.hp);
+  document.getElementById('force').textContent = jogador.forca;
+  document.getElementById('def').textContent = jogador.defesa;
+  document.getElementById('standHud').textContent = jogador.stand || "Nenhum";
+}
+
+// Roda dado com pequeno suspense na tela
+async function rolarD20() {
+  diceEl.textContent = "🎲 Rolando dados da desgraça...";
+  await new Promise(r => setTimeout(r, 450));
+  const valor = rng.next(1, 21);
+  diceEl.textContent = `🎲 Você rolou um [ D20 = ${valor} ]!`;
+  log(`[D20]: Rolou ${valor}`, valor >= 12 ? 'green' : 'red');
+  return valor;
+}
+
+function checarMorte() {
+  atualizarHUD();
+  if (jogador.hp <= 0) {
+    logBlank();
+    log("💀 SEU PERSONAGEM MORREU.", 'red');
+    log("O mestre solta uma risada maligna e anota mais uma baixa.", 'red');
+    menuEl.style.display = 'none';
+    document.getElementById('restartBtn').style.display = 'block';
+    return true;
+  }
+  return false;
+}
+
+// ===================== EVENTOS DE INÍCIO =====================
+function iniciarJogo() {
+  const nome = document.getElementById('nameInput').value.trim();
+  jogador.nome = nome || "Fracassado Anônimo";
+  jogador.hp = 100;
+  jogador.forca = rng.next(8, 15);
+  jogador.defesa = rng.next(3, 10);
+
+  document.getElementById('nameForm').style.display = 'none';
+
+  log("===================================================", 'cyan');
+  log("   🎮 RPG 2,50 - CAFEZINHO EDITION INICIADO", 'cyan');
+  log("===================================================", 'cyan');
+  logBlank();
+  log("O mestre analisa sua ficha com desprezo...", 'dim');
+  log(`"${jogador.nome}? Que nome horroroso para um herói."`, 'yellow');
+  logBlank();
+
+  atualizarHUD();
+  menuEl.style.display = 'grid';
+  renderMenuPrincipal();
+}
+
+// ===================== MENUS =====================
+function renderMenuPrincipal() {
+  emBossFight = false;
+  menuEl.innerHTML = `
+    <button onclick="explorar()">🧭 1 - Explorar Mato</button>
+    <button onclick="mostrarInventario()">🎒 2 - Abrir Mochila</button>
+    <button onclick="ocarina()">🎶 3 - Tocar Ocarina</button>
+    <button onclick="descansar()">💤 4 - Cochilar</button>
+    <button onclick="cozinhar()">🍳 5 - Cozinhar Miojo</button>
+    <button onclick="suicidio()">🏳 6 - Desistir da Vida</button>
+    <button onclick="salvarJogo()">💾 7 - Salvar Progresso</button>
+    <button onclick="carregarJogo()">📂 8 - Carregar Progresso</button>
+  `;
+}
+
+function renderMenuBoss() {
+  menuEl.innerHTML = `
+    <button onclick="bossAcao('atacar')">⚔ 1 - Descer o Sarrafo</button>
+    <button onclick="bossAcao('defender')">🛡 2 - Se Encolher</button>
+    <button onclick="bossAcao('fugir')">🏃 3 - Fugir Todo Torto</button>
+    <button onclick="bossAcao('stand')" ${!jogador.stand ? 'disabled' : ''}>✨ 4 - Usar Stand</button>
+    <button onclick="bossAcao('item')">🎒 5 - Usar Item de Cura</button>
+    <button onclick="bossAcao('conversar')">💬 6 - Tentar Dialogar</button>
+  `;
+}
+
+// ===================== SISTEMA DE SALVAR =====================
+function salvarJogo() {
+  window.__saveSlot = JSON.stringify(jogador);
+  logBlank();
+  log("💾 [Sistema]: Jogo salvo com sucesso nos servidores movidos a batata.", 'green');
+}
+
+function carregarJogo() {
+  if (window.__saveSlot) {
+    jogador = JSON.parse(window.__saveSlot);
+    log("📂 [Sistema]: Carregado com sucesso de onde você parou.", 'cyan');
+    atualizarHUD();
+  } else {
+    log("❌ Nenhum dado de save encontrado nesta sessão temporária.", 'dim');
+  }
+}
+
+// ===================== AÇÕES DE EXPLORAÇÃO =====================
+async function explorar() {
+  log("Você caminha sem rumo no meio do nada...", 'dim');
+  const chance = rng.next(1, 101);
+  if (chance <= 40) {
+    await eventoAleatorio();
+  } else if (chance <= 75) {
+    encontrarItem();
+  } else {
+    iniciarBossFight();
+  }
+  checarMorte();
+}
+
+async function eventoAleatorio() {
+  const evento = eventosAleatorios[rng.next(0, eventosAleatorios.length)];
+  log(evento, 'yellow');
+  const dado = await rolarD20();
+  if (dado >= 12) {
+    log("Você conseguiu se esquivar do pior por pura sorte.");
+  } else {
+    const dano = rng.next(10, 25);
+    jogador.hp -= dano;
+    log(`Que azar! Você tomou ${dano} de dano físico e mental.`, 'red');
+  }
+}
+
+function encontrarItem() {
+  const item = itensTF2[rng.next(0, itensTF2.length)];
+  log(`✨ Você achou caído no chão: ${item}!`, 'green');
+  jogador.inventario.push(item);
+
+  // Chance de achar flecha de Jojo
+  if (rng.next(1, 3) === 1) {
+    const bonus = rng.next(3, 8);
+    log("💘 Uma flecha misteriosa com ponta de ouro te espetou!");
+    jogador.stand = poderesJojo[rng.next(0, poderesJojo.length)];
+    log(`Seu Stand despertou: ${jogador.stand}`, 'magenta');
+    jogador.forca += bonus;
+    log(`Sua força aumentou em +${bonus}!`);
+  }
+}
+
+// ===================== COMBATES DE BOSS =====================
+function iniciarBossFight() {
+  const boss = Bosses[rng.next(0, Bosses.length)];
+  bossState = {
+    nome: boss,
+    hp: rng.next(80, 160),
+    atk: rng.next(12, 22)
+  };
+  emBossFight = true;
+
+  logBlank();
+  log(`🚨 UM INIMIGO SELVAGEM APARECEU: ${boss.toUpperCase()}!`, 'red');
+  renderMenuBoss();
+}
+
+async function bossAcao(acao) {
+  if (!emBossFight || !bossState) return;
+
+  switch (acao) {
+    case 'atacar': {
+      const dadoAtk = await rolarD20();
+      if (dadoAtk >= 11) {
+        const dano = jogador.forca + rng.next(6, 18);
+        log(`💥 GOLPE CERTEIRO! Você causou ${dano} de dano no ${bossState.nome}.`, 'green');
+        bossState.hp -= dano;
+      } else {
+        log("❌ Você tropeçou na própria bota e errou o golpe!");
+      }
+      break;
+    }
+    case 'defender':
+      log("🛡 Você se encolhe na tentativa de reduzir danos. Defesa aumentada provisoriamente.");
+      jogador.defesa += 3;
+      break;
+    case 'fugir': {
+      const fuga = await rolarD20();
+      if (fuga >= 16) {
+        log("💨 Você correu tão rápido que deixou sua dignidade para trás, mas escapou!", 'cyan');
+        emBossFight = false;
+        bossState = null;
+        atualizarHUD();
+        renderMenuPrincipal();
+        return;
+      } else {
+        log(`O ${bossState.nome} barrou sua fuga e riu da sua cara.`);
+      }
+      break;
+    }
+    case 'stand': {
+      if (!jogador.stand) {
+        log("Você tentou invocar o nada.");
+        break;
+      }
+      log(`🔮 MÁXIMO PODER: Você invoca seu [ ${jogador.stand} ]!`, 'magenta');
+      const danoStand = rng.next(35, 55);
+      bossState.hp -= danoStand;
+      log(`O Stand desferiu uma sequência de socos causando ${danoStand} de dano!`, 'green');
+      break;
+    }
+    case 'item':
+      mostrarInventario();
+      return; // Abre a bolsa e pula o turno do boss para você escolher o item.
+    case 'conversar':
+      await conversarComNPC();
+      break;
+  }
+
+  // Turno do Inimigo
+  if (acao !== 'conversar' && bossState && bossState.hp > 0) {
+    logBlank();
+    log(`Turno do inimigo: ${bossState.nome} está se preparando...`, 'dim');
+    const bossRoll = rng.next(1, 21);
+    if (bossRoll >= 10) {
+      let danoBoss = bossState.atk - jogador.defesa;
+      if (danoBoss < 2) danoBoss = 2;
+      jogador.hp -= danoBoss;
+      log(`🥊 ${bossState.nome} te acertou em cheio causando ${danoBoss} de dano!`, 'red');
+    } else {
+      log(`🍃 O ${bossState.nome} errou o ataque de forma vergonhosa.`);
+    }
+  }
+
+  atualizarHUD();
+
+  if (checarMorte()) return;
+
+  // Vitória contra o boss
+  if (bossState && bossState.hp <= 0) {
+    logBlank();
+    log(`🎉 PARABÉNS! Você derrotou o temível ${bossState.nome}!`, 'green');
+    const recompensa = rng.next(20, 50);
+    jogador.hp = Math.min(jogador.hp + recompensa, jogador.hpMax);
+    log(`Você pilhou os bolsos dele e recuperou +${recompensa} HP.`);
+    emBossFight = false;
+    bossState = null;
+    atualizarHUD();
+    renderMenuPrincipal();
+    return;
+  }
+
+  if (emBossFight) {
+    logBlank();
+    log(`Status da Luta: [ Boss: ${bossState.hp} HP ] | [ Você: ${jogador.hp} HP ]`, 'dim');
+    renderMenuBoss();
+  }
+}
+
+// ===================== INVENTÁRIO COM USO DE ITENS =====================
+function mostrarInventario() {
+  logBlank();
+  log("🎒 ===== SEU INVENTÁRIO =====", 'cyan');
+  if (jogador.inventario.length === 0) {
+    log("Sua mochila está tão vazia quanto sua carteira.");
+    if (emBossFight) {
+      renderMenuBoss();
+    } else {
+      renderMenuPrincipal();
+    }
+    return;
+  }
+
+  menuEl.innerHTML = "";
+  jogador.inventario.forEach((it, idx) => {
+    const info = itensEfeitos[it] || { descricao: "Nenhum efeito conhecido" };
+    log(`[${idx + 1}] ${it} - (${info.descricao})`, 'yellow');
+    
+    // Cria botões dinâmicos para uso real dos itens
+    const btn = document.createElement('button');
+    btn.textContent = `Usar: ${it}`;
+    btn.onclick = () => usarItemDaMochila(idx);
+    menuEl.appendChild(btn);
+  });
+
+  // Botão de voltar
+  const voltarBtn = document.createElement('button');
+  voltarBtn.textContent = "⬅ Voltar";
+  voltarBtn.style.borderColor = "var(--red)";
+  voltarBtn.onclick = () => {
+    if (emBossFight) renderMenuBoss();
+    else renderMenuPrincipal();
+  };
+  menuEl.appendChild(voltarBtn);
+}
+
+function usarItemDaMochila(index) {
+  const item = jogador.inventario[index];
+  if (itensEfeitos[item]) {
+    itensEfeitos[item].usar();
+    log(`Você usou/ativou: ${item}!`, 'green');
+    jogador.inventario.splice(index, 1); // remove o item
+  } else {
+    log("Esse item está quebrado e não faz nada.");
+  }
+  
+  atualizarHUD();
+  checarMorte();
+
+  if (jogador.hp > 0) {
+    if (emBossFight) {
+      renderMenuBoss();
+    } else {
+      renderMenuPrincipal();
+    }
+  }
+}
+
+// ===================== OUTRAS OPÇÕES DO MENU =====================
+async function ocarina() {
+  log("🎶 Você sopra a ocarina desafinada tentando imitar o Link...", 'cyan');
+  const efeito = rng.next(1, 7);
+  await new Promise(r => setTimeout(r, 400));
+  
+  switch(efeito) {
+    case 1:
+      log("⏱ O tempo acelerou e você se sentiu ágil. Força +3!");
+      jogador.forca += 3;
+      break;
+    case 2:
+      log("🌧 Uma nuvem cinza se formou só em cima de você e choveu ácido. HP -12.", 'red');
+      jogador.hp -= 12;
+      break;
+    case 3:
+      log("🌕 A lua ficou vermelha e você ganhou casca grossa. Defesa +4!", 'blue');
+      jogador.defesa += 4;
+      break;
+    case 4:
+      log("💥 O mestre mudou o sistema de regras na maldade. Seus atributos caíram!", 'red');
+      jogador.forca = Math.max(1, jogador.forca - 5);
+      jogador.defesa = Math.max(0, jogador.defesa - 3);
+      break;
+    case 5:
+      log("Você cuspiu saliva dentro do instrumento e nada aconteceu.");
+      break;
+    case 6:
+      log("🎵 Você tocou a canção do tempo e recuperou um pouco de vida!", 'green');
+      jogador.hp = Math.min(jogador.hp + 25, jogador.hpMax);
+      break;
+  }
+  checarMorte();
+}
+
+async function descansar() {
+  log("💤 Você deita no chão frio para tentar tirar um cochilo...", 'dim');
+  const dado = await rolarD20();
+  if (dado >= 13) {
+    const cura = rng.next(20, 40);
+    jogador.hp = Math.min(jogador.hp + cura, jogador.hpMax);
+    log(`😴 Sono revigorante! Você acordou com +${cura} de HP.`, 'green');
+  } else {
+    const dano = rng.next(12, 28);
+    jogador.hp -= dano;
+    log(`💥 PÉSSIMA IDÉIA! Um bicho mordeu sua orelha enquanto dormia. Você perdeu ${dano} HP.`, 'red');
+  }
+  checarMorte();
+}
+
+async function cozinhar() {
+  log("🍳 Você tenta fazer um miojo improvisado com ingredientes duvidosos...", 'dim');
+  const dado = await rolarD20();
+  if (dado >= 11) {
+    const bonus = rng.next(6, 18);
+    jogador.forca += bonus;
+    log(`🍜 Ficou com gosto de sabão, mas te deu energia de sobra! Força +${bonus}!`, 'green');
+  } else {
+    const dano = rng.next(10, 22);
+    jogador.hp -= dano;
+    log(`🤮 Infecção alimentar grave! Você passou mal e perdeu ${dano} HP.`, 'red');
+  }
+  checarMorte();
+}
+
+function suicidio() {
+  const frase = finaisAbsurdos[rng.next(0, finaisAbsurdos.length)];
+  logBlank();
+  log(`🏳 DESISTÊNCIA: ${frase}`, 'red');
+  jogador.hp = 0;
+  checarMorte();
+}
+
+async function conversarComNPC() {
+  const falas = [
+    "Um velho desabafa sobre taxas de corretagem de NFT.",
+    "Um duende verde quer saber se você quer comprar cripto de pote.",
+    "Um guerreiro de armadura chora no canto porque a aposentadoria não sai.",
+    "O boss pergunta se você apoia a taxação de compras internacionais."
+  ];
+  logBlank();
+  log(`🗣 Diálogo de mesa: ${falas[rng.next(0, falas.length)]}`, 'cyan');
+  
+  const opcoes = ["Ser educado", "Bater no peito", "Gritar e mentir", "Fingir demência"];
+  const escolha = rng.next(0, opcoes.length);
+  log(`Sua reação instintiva foi: ${opcoes[escolha]}`, 'dim');
+  
+  const dado = await rolarD20();
+  if (dado >= 14) {
+    switch (escolha) {
+      case 0:
+        log("O NPC achou você fofo e te deu um beijinho na testa. HP +10.", 'green');
+        jogador.hp = Math.min(jogador.hp + 10, jogador.hpMax);
+        break;
+      case 1:
+        log("Sua marra funcionou. O NPC se assustou e sua força subiu em +5!", 'green');
+        jogador.forca += 5;
+        break;
+      case 2:
+        log("A mentira colou perfeitamente. Você se sente mais seguro. Defesa +3!", 'green');
+        jogador.defesa += 3;
+        break;
+      case 3:
+        log("Você saiu andando assobiando e deu tudo certo.");
+        break;
+    }
+  } else {
+    const dano = rng.next(8, 20);
+    log(`❌ Que desastre de conversa! O clima ficou péssimo. Você perdeu ${dano} de moral (HP).`, 'red');
+    jogador.hp -= dano;
+  }
+}
+</script>
+</body>
+</html>
